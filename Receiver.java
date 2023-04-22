@@ -13,8 +13,8 @@ public class Receiver implements Runnablle {
 
     private static final String HOST = "0.0.0.0";
     private final Socket client;
-    private final ObjectInputStream in;
-    private final ObjectOutputStream out;
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
     private final boolean isConnected;
     private final String userDir;
 
