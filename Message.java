@@ -3,7 +3,7 @@ import java.io.Serializable;
 /**
  * This class represents a message object that is sent to the server by the client.
  */
-public class Message implements Serializable {
+public class message implements Serializable {
 
     private final byte[] message;
 
