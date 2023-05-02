@@ -1,3 +1,4 @@
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -16,6 +17,8 @@ public class Client {
     private final ObjectInputStream in;
     private final ObjectOutputStream out;
     private final boolean isConnected;
+    private String clientname;
+    private File file;
     private final String userDir;
 
     /**
@@ -26,8 +29,12 @@ public class Client {
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public Client ( int port ) throws IOException {
+    public Client ( int port, String name ) throws IOException {
         client = new Socket ( HOST , port );
+        clientname = name;
+        // Create folder where we will store private key
+        CreateFolder(clientname);
+        CreateFolderPrivate_keys(clientname);
         out = new ObjectOutputStream ( client.getOutputStream ( ) );
         in = new ObjectInputStream ( client.getInputStream ( ) );
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
@@ -103,6 +110,32 @@ public class Client {
         } catch ( IOException e ) {
             throw new RuntimeException ( e );
         }
+    }
+
+    private void CreateFolder(String clientname) {
+        file = new File("./file-server-main/"+clientname);
+        //Creating a folder using mkdir() method
+        boolean bool = file.mkdir();
+        if(bool){
+            System.out.println("Folder with client name is created successfully");
+        }else{
+            System.out.println("Error Found!");
+        }
+    }
+
+    private void CreateFolderPrivate_keys(String clientname) {
+        File f1 = new File("./file-server-main/"+clientname+"/private");
+        //Creating a folder using mkdir() method
+        boolean bool = f1.mkdir();
+        if(bool){
+            System.out.println("Folder private is created successfully");
+        }else{
+            System.out.println("Error Found!");
+        }
+    }
+
+    public String get_clientname(){
+        return this.clientname;
     }
 
 }
