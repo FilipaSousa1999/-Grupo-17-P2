@@ -105,6 +105,11 @@ public class Sender {
         return this.clientname;
     }
 
+    /**
+     * Function creates private file with sender's name
+     *
+     * @param clientname value to create file with sender's name
+     */
     private void CreateFolder(String clientname) {
         file = new File("./file-server-main/"+clientname);
         //Creating a folder using mkdir() method
@@ -116,6 +121,11 @@ public class Sender {
         }
     }
 
+    /**
+     * Function creates private file with sender's name
+     *
+     * @param clientname value to create private file with sender's name
+     */
     private void CreateFolderPrivate_keys(String clientname) {
         File f1 = new File("./file-server-main/"+clientname+"/private");
         //Creating a folder using mkdir() method
@@ -127,16 +137,44 @@ public class Sender {
         }
     }
 
+    /**
+     * Functions saves private key
+     *
+     * @param privateKey value of private key
+     *
+     * @param sender we need to know a sender's name to save a private key with sender's name
+     *
+     * @throws IOException
+     */
     private void savePrivate_key(BigInteger privateKey, Sender sender) throws IOException {
         FileWriter f1 = new FileWriter("./file-server-main/"+sender.get_clientname()+"/private");
         f1.write(String.valueOf(privateKey));
         f1.close();
     }
 
+    /**
+     * Functions create file with sender's name and saves public key
+     *
+     * @param publicKey value of public key
+     *
+     * @param sender we need to know a sender's name to save a public key with sender's name
+     *
+     * @throws IOException error in I/O
+     */
     private void savePublic_key(BigInteger publicKey, Sender sender) throws IOException {
-        FileWriter f1 = new FileWriter("./file-server-main/pki/public_keys/" + sender.get_clientname()+"PUk.key");
-        f1.write(String.valueOf(publicKey));
-        f1.close();
+
+        File f1 = new File("./file-server-main/pki/public_keys/" + sender.get_clientname()+"PUk.key");
+        //Creating a folder using mkdir() method
+        boolean bool = f1.mkdir();
+        if(bool){
+            System.out.println("Folder private is created successfully");
+        }else{
+            System.out.println("Error Found!");
+        }
+
+        FileWriter f2 = new FileWriter("./file-server-main/pki/public_keys/" + sender.get_clientname()+"PUk.key");
+        f2.write(String.valueOf(publicKey));
+        f2.close();
     }
 
 }
