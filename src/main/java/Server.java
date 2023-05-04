@@ -1,9 +1,11 @@
+package src.main.java;
+
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * This class represents a server that receives a message from the clients. The server is implemented as a thread. Each
+ * This class represents a server that receives a src.main.java.message from the clients. The server is implemented as a thread. Each
  * time a client connects to the server, a new thread is created to handle the communication with the client.
  */
 public class Server implements Runnable {

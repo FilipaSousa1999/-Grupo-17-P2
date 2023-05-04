@@ -1,3 +1,5 @@
+package src.main.java;
+
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -34,7 +36,7 @@ public class ClientHandler extends Thread {
         super.run ( );
         try {
             while ( isConnected ) {
-                // Reads the message to extract the path of the file
+                // Reads the src.main.java.message to extract the path of the file
                 Message message = ( Message ) in.readObject ( );
                 String request = new String ( message.getMessage ( ) );
                 // Reads the file and sends it to the client

@@ -1,14 +1,14 @@
+package src.main.java;
+
 import java.io.*;
 import java.math.BigInteger;
 import  java.net.Socket;
 
-import static jdk.internal.net.http.Exchange.ConnectionAborter.closeConnection;
-
 /**
- * This class represents the sender of the message. It sends the message to the receiver by means of a socket. The use
+ * This class represents the sender of the src.main.java.message. It sends the src.main.java.message to the receiver by means of a socket. The use
  * of the Object streams enables the sender to send any kind of object.
  */
-public class Sender {
+public class Client {
     private static final String MAC_KEY = "Mas2142SS!±";
 
     private final Socket sender;
@@ -19,13 +19,13 @@ public class Sender {
 
 
     /**
-     * Constructs a Sender object by specifying the port to connect to. The socket must be created before the sender can
-     * send a message.
+     * Constructs a src.main.java.Client object by specifying the port to connect to. The socket must be created before the sender can
+     * send a src.main.java.message.
      *
      * @param port the port to connect to
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public Sender(int port, String name) throws IOException {
+    public Client(int port, String name) throws IOException {
         client = new Socket(HOST, port);
         // Create folder where we will store private key
         clientname = name;
@@ -36,23 +36,23 @@ public class Sender {
 
     }
     /**
-     * Sends a message to the receiver using the OutputStream of the socket. The message is sent as an object of the
+     * Sends a src.main.java.message to the receiver using the OutputStream of the socket. The src.main.java.message is sent as an object of the
      * {@link Message} class.
      *
-     * @param message the message to send
+     * @param message the src.main.java.message to send
      *
      * @throws Exception when the encryption or the integrity generation fails
      */
     public void sendMessage (String message) throws Exception {
         //Agree on a shared secret
         BigInteger secret = agreeOnSharedSecret();
-        //Encrypts the message
+        //Encrypts the src.main.java.message
         byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), secret.toByteArray());
         //Generates the MAC
         byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
-        //Creates the message object
+        //Creates the src.main.java.message object
         Message messageObj = new Message(encryptedMessage, mac);
-        //Sends the encrypted message with MAC
+        //Sends the encrypted src.main.java.message with MAC
         out.writeObject( messageObj );
         //Close connection
         closeConnection();
@@ -111,7 +111,7 @@ public class Sender {
      * @param clientname value to create file with sender's name
      */
     private void CreateFolder(String clientname) {
-        file = new File("./file-server-main/"+clientname);
+        file = new File("./src/" +clientname);
         //Creating a folder using mkdir() method
         boolean bool = file.mkdir();
         if(bool){
@@ -127,7 +127,7 @@ public class Sender {
      * @param clientname value to create private file with sender's name
      */
     private void CreateFolderPrivate_keys(String clientname) {
-        File f1 = new File("./file-server-main/"+clientname+"/private");
+        File f1 = new File("./src/" +clientname+"/private");
         //Creating a folder using mkdir() method
         boolean bool = f1.mkdir();
         if(bool){
@@ -142,28 +142,28 @@ public class Sender {
      *
      * @param privateKey value of private key
      *
-     * @param sender we need to know a sender's name to save a private key with sender's name
+     * @param client we need to know a client's name to save a private key with client's name
      *
      * @throws IOException
      */
-    private void savePrivate_key(BigInteger privateKey, Sender sender) throws IOException {
-        FileWriter f1 = new FileWriter("./file-server-main/"+sender.get_clientname()+"/private");
+    private void savePrivate_key(BigInteger privateKey, src.main.java.Client client) throws IOException {
+        FileWriter f1 = new FileWriter("./src/" + client.get_clientname()+"/private");
         f1.write(String.valueOf(privateKey));
         f1.close();
     }
 
     /**
-     * Functions create file with sender's name and saves public key
+     * Functions create file with client's name and saves public key
      *
      * @param publicKey value of public key
      *
-     * @param sender we need to know a sender's name to save a public key with sender's name
+     * @param client we need to know a client's name to save a public key with client's name
      *
      * @throws IOException error in I/O
      */
-    private void savePublic_key(BigInteger publicKey, Sender sender) throws IOException {
+    private void savePublic_key(BigInteger publicKey, src.main.java.Client client) throws IOException {
 
-        File f1 = new File("./file-server-main/pki/public_keys/" + sender.get_clientname()+"PUk.key");
+        File f1 = new File("./src/pki/public_keys/" + client.get_clientname()+"PUk.key");
         //Creating a folder using mkdir() method
         boolean bool = f1.mkdir();
         if(bool){
@@ -172,7 +172,7 @@ public class Sender {
             System.out.println("Error Found!");
         }
 
-        FileWriter f2 = new FileWriter("./file-server-main/pki/public_keys/" + sender.get_clientname()+"PUk.key");
+        FileWriter f2 = new FileWriter("./src/pki/public_keys/" + client.get_clientname()+"PUk.key");
         f2.write(String.valueOf(publicKey));
         f2.close();
     }

@@ -1,3 +1,5 @@
+package src.main.java;
+
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
@@ -7,10 +9,10 @@ import java.nio.ByteBuffer;
  */
 public class Encryption {
     /**
-     * @param message   the message to be encrypted
-     * @param secretKey the secret key used to encrypt the message
+     * @param message   the src.main.java.message to be encrypted
+     * @param secretKey the secret key used to encrypt the src.main.java.message
      *
-     * @return the encrypted message as an array of bytes
+     * @return the encrypted src.main.java.message as an array of bytes
      *
      * @throws Exception when the decryption fails
      */
@@ -22,10 +24,10 @@ public class Encryption {
         return cipher.doFinal ( message );
     }
     /**
-     * @param message   the message to be decrypted
-     * @param secretKey the secret key used to decrypt the message
+     * @param message   the src.main.java.message to be decrypted
+     * @param secretKey the secret key used to decrypt the src.main.java.message
      *
-     * @return the decrypted message as an array of bytes
+     * @return the decrypted src.main.java.message as an array of bytes
      *
      * @throws Exception when the encryption fails
      */
