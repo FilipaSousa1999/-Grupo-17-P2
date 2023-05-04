@@ -109,7 +109,7 @@ public class Client {
      * @param clientname value to create file with sender's name
      */
     private void CreateFolder(String clientname) {
-        file = new File("./src/" +clientname);
+        file = new File("./" +clientname);
         //Creating a folder using mkdir() method
         boolean bool = file.mkdir();
         if(bool){
@@ -124,11 +124,9 @@ public class Client {
      *
      * @param clientname value to create private file with sender's name
      */
-    private void CreateFolderPrivate_keys(String clientname) {
-        File f1 = new File("./src/" +clientname+"/private");
-        //Creating a folder using mkdir() method
-        boolean bool = f1.mkdir();
-        if(bool){
+    private void CreateFolderPrivate_keys(String clientname) throws IOException {
+        File f1 = new File("./" +clientname+"/private");
+        if(f1.createNewFile()){
             System.out.println("Folder private is created successfully");
         }else{
             System.out.println("Error Found!");
@@ -145,7 +143,7 @@ public class Client {
      * @throws IOException
      */
     private void savePrivate_key(BigInteger privateKey, Client client) throws IOException {
-        FileWriter f1 = new FileWriter("./src/" + client.get_clientname()+"/private");
+        FileWriter f1 = new FileWriter("./" + client.get_clientname()+"/private");
         f1.write(String.valueOf(privateKey));
         f1.close();
     }
@@ -161,10 +159,8 @@ public class Client {
      */
     private void savePublic_key(BigInteger publicKey, Client client) throws IOException {
 
-        File f1 = new File("./src/pki/public_keys/" + client.get_clientname()+"PUk.key");
-        //Creating a folder using mkdir() method
-        boolean bool = f1.mkdir();
-        if(bool){
+        File f1 = new File("./pki/public_keys/" + client.get_clientname()+"PUk.key");
+        if(f1.createNewFile()){
             System.out.println("Folder private is created successfully");
         }else{
             System.out.println("Error Found!");
