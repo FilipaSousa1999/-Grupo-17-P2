@@ -1,6 +1,9 @@
 import java.io.*;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 /**
  * This class represents the sender of the src.main.java.message. It sends the src.main.java.message to the receiver by means of a socket. The use
@@ -14,6 +17,9 @@ public class Client {
     File file;
     private ObjectInputStream in;
     private ObjectOutputStream out;
+    private final PublicKey publicRSAKey;
+    private final PrivateKey privateRSAKey;
+    private final PublicKey serverPublicRSAKey;
 
 
     /**
@@ -23,15 +29,15 @@ public class Client {
      * @param port the port to connect to
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public Client(int port, String name) throws IOException {
+    public Client(int port) throws Exception {
         client = new Socket(HOST, port);
-        // Create folder where we will store private key
-        clientname = name;
-        CreateFolder(clientname);
-        CreateFolderPrivate_keys(clientname);
         out = new ObjectOutputStream(client.getOutputStream());
         in = new ObjectInputStream(client.getInputStream());
-
+        KeyPair keyPair = Encryption.generateKeyPair ( );
+        this.privateRSAKey = keyPair.getPrivate ( );
+        this.publicRSAKey = keyPair.getPublic ( );
+        // Performs the RSA key distribution
+        serverPublicRSAKey = rsaKeyDistribution ( );
     }
     /**
      * Sends a src.main.java.message to the receiver using the OutputStream of the socket. The src.main.java.message is sent as an object of the
@@ -67,9 +73,6 @@ public class Client {
         // Generates a private key
         BigInteger privateKey = DiffieHellman.generatePrivateKey ( );
         BigInteger publicKey = DiffieHellman.generatePublicKey ( privateKey );
-        //Save private key
-        savePrivate_key(privateKey, this);
-        savePublic_key(publicKey, this);
         // Sends the public key to the server
         sendPublicKey ( publicKey );
         // Waits for the server to send his public key
@@ -86,6 +89,31 @@ public class Client {
      */
     private void sendPublicKey ( BigInteger publicKey ) throws Exception {
         out.writeObject ( publicKey );
+    }
+
+    /**
+     * Executes the key distribution protocol. The client sends its public key to the server and receives the public
+     * key of the server.
+     *
+     * @return the public key of the server
+     *
+     * @throws Exception when the key distribution protocol fails
+     */
+    private PublicKey rsaKeyDistribution ( ) throws Exception {
+        // Sends the public key
+        sendPublicRSAKey ( );
+        // Receive the public key of the server
+        return ( PublicKey ) in.readObject ( );
+    }
+
+    /**
+     * Sends the public key of the client to the server.
+     *
+     * @throws IOException when an I/O error occurs when sending the public key
+     */
+    private void sendPublicRSAKey ( ) throws IOException {
+        out.writeObject ( publicRSAKey );
+        out.flush ( );
     }
 
     /**
@@ -108,7 +136,7 @@ public class Client {
      *
      * @param clientname value to create file with sender's name
      */
-    private void CreateFolder(String clientname) {
+    public void CreateFolder(String clientname) {
         file = new File("./" +clientname);
         //Creating a folder using mkdir() method
         boolean bool = file.mkdir();
@@ -124,9 +152,11 @@ public class Client {
      *
      * @param clientname value to create private file with sender's name
      */
-    private void CreateFolderPrivate_keys(String clientname) throws IOException {
+    public void CreateFolderPrivate_keys(String clientname) {
         File f1 = new File("./" +clientname+"/private");
-        if(f1.createNewFile()){
+        //Creating a folder using mkdir() method
+        boolean bool = f1.mkdir();
+        if(bool){
             System.out.println("Folder private is created successfully");
         }else{
             System.out.println("Error Found!");
@@ -138,12 +168,12 @@ public class Client {
      *
      * @param privateKey value of private key
      *
-     * @param client we need to know a client's name to save a private key with client's name
+     * @param userName we need to know a client's name to save a private key with client's name
      *
      * @throws IOException
      */
-    private void savePrivate_key(BigInteger privateKey, Client client) throws IOException {
-        FileWriter f1 = new FileWriter("./" + client.get_clientname()+"/private");
+    public void savePrivate_key(PrivateKey privateKey, String userName) throws IOException {
+        FileWriter f1 = new FileWriter("./" + userName+"/private/" + userName+"Prk.key");
         f1.write(String.valueOf(privateKey));
         f1.close();
     }
@@ -153,22 +183,35 @@ public class Client {
      *
      * @param publicKey value of public key
      *
-     * @param client we need to know a client's name to save a public key with client's name
+     * @param userName we need to know a client's name to save a public key with client's name
      *
      * @throws IOException error in I/O
      */
-    private void savePublic_key(BigInteger publicKey, Client client) throws IOException {
+    public void savePublic_key(PublicKey publicKey, String userName) throws IOException {
 
-        File f1 = new File("./pki/public_keys/" + client.get_clientname()+"PUk.key");
-        if(f1.createNewFile()){
+        /*File f1 = new File("./pki/public_keys/" + client.get_clientname()+"PUk.key");
+        //Creating a folder using mkdir() method
+        boolean bool = f1.mkdir();
+        if(bool){
             System.out.println("Folder private is created successfully");
         }else{
             System.out.println("Error Found!");
-        }
+        }*/
 
-        FileWriter f2 = new FileWriter("./src/pki/public_keys/" + client.get_clientname()+"PUk.key");
+        FileWriter f2 = new FileWriter("./pki/public_keys/" + userName+"PUk.key");
         f2.write(String.valueOf(publicKey));
         f2.close();
     }
 
+    public void setClientname(String clientname) {
+        this.clientname = clientname;
+    }
+
+    public PublicKey getPublicRSAKey() {
+        return publicRSAKey;
+    }
+
+    public PrivateKey getPrivateRSAKey() {
+        return privateRSAKey;
+    }
 }

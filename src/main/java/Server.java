@@ -1,6 +1,5 @@
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
+import java.math.BigInteger;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.security.KeyPair;
@@ -35,6 +34,7 @@ public class Server implements Runnable {
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );
+        savePublic_key(publicRSAKey);
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
     }
 
@@ -46,9 +46,11 @@ public class Server implements Runnable {
                 in = new ObjectInputStream ( client.getInputStream ( ) );
                 out = new ObjectOutputStream ( client.getOutputStream ( ) );
                 // Perform key distribution
-                PublicKey senderPublicRSAKey = rsaKeyDistribution ( in );
+                PublicKey clientPublicRSAKey = rsaKeyDistribution ( in );
+                // Agree on a shared secret
+                BigInteger sharedSecret = agreeOnSharedSecret ( clientPublicRSAKey );
                 // Process the request
-                process ( client );
+                process ( client , sharedSecret);
             }
             closeConnection ( );
         } catch ( Exception e ) {
@@ -61,8 +63,8 @@ public class Server implements Runnable {
      *
      * @throws IOException if an I/O error occurs when reading stream header
      */
-    private void process ( Socket client ) throws IOException {
-        ClientHandler clientHandler = new ClientHandler ( client );
+    private void process ( Socket client , BigInteger sharedSecret) throws IOException {
+        ClientHandler clientHandler = new ClientHandler ( client , sharedSecret);
         clientHandler.start ( );
     }
 
@@ -92,6 +94,53 @@ public class Server implements Runnable {
     private void sendPublicRSAKey ( ) throws IOException {
         out.writeObject ( publicRSAKey );
         out.flush ( );
+    }
+
+    /**
+     * Performs the Diffie-Hellman algorithm to agree on a shared private key.
+     *
+     * @param clientPublicRSAKey the public key of the client
+     *
+     * @return the shared secret key
+     *
+     * @throws Exception when the key agreement protocol fails
+     */
+    private BigInteger agreeOnSharedSecret ( PublicKey clientPublicRSAKey ) throws Exception {
+        // Generate a pair of keys
+        BigInteger privateKey = DiffieHellman.generatePrivateKey ( );
+        BigInteger publicKey = DiffieHellman.generatePublicKey ( privateKey );
+        // Extracts the public key from the request
+        BigInteger clientPublicKey = new BigInteger ( Encryption.decryptRSA ( ( byte[] ) in.readObject ( ) , clientPublicRSAKey ) );
+        // Send the public key to the client
+        sendPublicDHKey ( publicKey );
+        // Generates the shared secret
+        return DiffieHellman.computePrivateKey ( clientPublicKey , privateKey );
+    }
+
+    /**
+     * Sends the public key to the client.
+     *
+     * @param publicKey the public key to be sent
+     *
+     * @throws Exception when the public key cannot be sent
+     */
+    private void sendPublicDHKey ( BigInteger publicKey ) throws Exception {
+        out.writeObject ( Encryption.encryptRSA ( publicKey.toByteArray ( ) , this.privateRSAKey ) );
+    }
+
+    /**
+     * Functions save public key
+     *
+     * @param publicKey value of public key
+     *
+     * @throws IOException error in I/O
+     */
+    private void savePublic_key(PublicKey publicKey) throws IOException {
+
+        //File f1 = new File("./pki/public_keys/" + client.get_clientname()+"PUk.key");
+        FileWriter f2 = new FileWriter("./pki/public_keys/serverPUk.key");
+        f2.write(String.valueOf(publicKey));
+        f2.close();
     }
 
     /**

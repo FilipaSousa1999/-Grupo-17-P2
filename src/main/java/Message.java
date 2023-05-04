@@ -26,4 +26,13 @@ public class Message implements Serializable {
     public byte[] getMessage ( ) {
         return message;
     }
+
+    /**
+     * Gets the message authentication code (MAC).
+     *
+     * @return the message authentication code
+     */
+    public byte[] getMac ( ) {
+        return mac;
+    }
 }

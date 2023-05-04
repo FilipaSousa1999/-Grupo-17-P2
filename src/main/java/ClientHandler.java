@@ -1,6 +1,7 @@
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.math.BigInteger;
 import java.net.Socket;
 
 /**
@@ -13,6 +14,9 @@ public class ClientHandler extends Thread {
     private final ObjectOutputStream out;
     private final Socket client;
     private final boolean isConnected;
+    private BigInteger sharedSecret;
+
+    private static final String MAC_KEY = "Mas2142SS!±";
 
     /**
      * Creates a ClientHandler object by specifying the socket to communicate with the client. All the processing is
@@ -22,8 +26,9 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public ClientHandler ( Socket client ) throws IOException {
+    public ClientHandler ( Socket client , BigInteger sharedSecret) throws IOException {
         this.client = client;
+        this.sharedSecret = sharedSecret;
         in = new ObjectInputStream ( client.getInputStream ( ) );
         out = new ObjectOutputStream ( client.getOutputStream ( ) );
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
@@ -36,6 +41,14 @@ public class ClientHandler extends Thread {
             while ( isConnected ) {
                 // Reads the message to extract the path of the file
                 Message message = ( Message ) in.readObject ( );
+                // Extracts and decrypt the message
+                byte[] decryptedMessage = Encryption.decryptMessage ( message.getMessage ( ) , sharedSecret.toByteArray ( ) );
+                // Computes the digest of the received message
+                byte[] computedDigest = Integrity.generateMAC ( decryptedMessage , MAC_KEY);
+                // Verifies the integrity of the message
+                if ( ! Integrity.verifyMAC ( message.getMac ( ) , computedDigest ) ) {
+                    throw new RuntimeException ( "The integrity of the message is not verified" );
+                }
                 String request = new String ( message.getMessage ( ) );
                 // Reads the file and sends it to the client
                 byte[] content = FileHandler.readFile ( RequestUtils.getAbsoluteFilePath ( request ) );
@@ -46,6 +59,8 @@ public class ClientHandler extends Thread {
         } catch ( IOException | ClassNotFoundException e ) {
             // Close connection
             closeConnection ( );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
         }
     }
 
@@ -54,13 +69,13 @@ public class ClientHandler extends Thread {
      *
      * @param content the content of the file to send
      *
-     * @throws IOException when an I/O error occurs when sending the file
+     * @throws Exception when an error occurs when sending the file
      */
-    private void sendFile ( byte[] content ) throws IOException {
+    private void sendFile ( byte[] content ) throws Exception {
         //Encrypts the content
-        byte[] encryptedMessage = Encryption.encryptMessage(content, Client.getSecret().toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray());
         //Generates the MAC
-        byte[] mac = Integrity.generateMAC (content, );
+        byte[] mac = Integrity.generateMAC (content, MAC_KEY );
         Message response = new Message ( encryptedMessage , mac );
         out.writeObject ( response );
         out.flush ( );
