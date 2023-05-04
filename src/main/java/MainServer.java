@@ -1,5 +1,3 @@
-package src.main.java;
-
 import java.io.IOException;
 
 public class MainServer {

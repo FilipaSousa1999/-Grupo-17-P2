@@ -1,5 +1,3 @@
-package src.main.java;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -36,7 +34,7 @@ public class ClientHandler extends Thread {
         super.run ( );
         try {
             while ( isConnected ) {
-                // Reads the src.main.java.message to extract the path of the file
+                // Reads the message to extract the path of the file
                 Message message = ( Message ) in.readObject ( );
                 String request = new String ( message.getMessage ( ) );
                 // Reads the file and sends it to the client
@@ -59,7 +57,11 @@ public class ClientHandler extends Thread {
      * @throws IOException when an I/O error occurs when sending the file
      */
     private void sendFile ( byte[] content ) throws IOException {
-        Message response = new Message ( content );
+        //Encrypts the content
+        byte[] encryptedMessage = Encryption.encryptMessage(content, Client.getSecret().toByteArray());
+        //Generates the MAC
+        byte[] mac = Integrity.generateMAC (content, );
+        Message response = new Message ( encryptedMessage , mac );
         out.writeObject ( response );
         out.flush ( );
     }

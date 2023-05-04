@@ -1,5 +1,3 @@
-package src.main.java;
-
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;

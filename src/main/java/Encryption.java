@@ -1,13 +1,33 @@
-package src.main.java;
-
 import javax.crypto.Cipher;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.ByteBuffer;
+import java.security.Key;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 
 /**
  * This class implements the encryption and decryption of messages.
  */
 public class Encryption {
+
+    public static KeyPair generateKeyPair ( ) throws Exception {
+        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance ( "RSA" );
+        keyPairGenerator.initialize ( 2048 );
+        return keyPairGenerator.generateKeyPair ( );
+    }
+
+    public static byte[] encryptRSA ( byte[] message , Key key ) throws Exception {
+        Cipher cipher = Cipher.getInstance ( "RSA" );
+        cipher.init ( Cipher.ENCRYPT_MODE , key );
+        return cipher.doFinal ( message );
+    }
+
+    public static byte[] decryptRSA ( byte[] message , Key key ) throws Exception {
+        Cipher cipher = Cipher.getInstance ( "RSA" );
+        cipher.init ( Cipher.DECRYPT_MODE , key );
+        return cipher.doFinal ( message );
+    }
+
     /**
      * @param message   the src.main.java.message to be encrypted
      * @param secretKey the secret key used to encrypt the src.main.java.message

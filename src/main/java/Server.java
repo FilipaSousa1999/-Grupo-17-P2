@@ -1,8 +1,11 @@
-package src.main.java;
-
 import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.security.KeyPair;
+import java.security.PrivateKey;
+import java.security.PublicKey;
 
 /**
  * This class represents a server that receives a src.main.java.message from the clients. The server is implemented as a thread. Each
@@ -13,6 +16,10 @@ public class Server implements Runnable {
 
     public static final String FILE_PATH = "server/files";
     private final ServerSocket server;
+    private ObjectInputStream in;
+    private ObjectOutputStream out;
+    private final PrivateKey privateRSAKey;
+    private final PublicKey publicRSAKey;
     private final boolean isConnected;
 
     /**
@@ -23,8 +30,11 @@ public class Server implements Runnable {
      *
      * @throws IOException if an I/O error occurs when opening the socket
      */
-    public Server ( int port ) throws IOException {
+    public Server ( int port ) throws Exception {
         server = new ServerSocket ( port );
+        KeyPair keyPair = Encryption.generateKeyPair ( );
+        this.privateRSAKey = keyPair.getPrivate ( );
+        this.publicRSAKey = keyPair.getPublic ( );
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
     }
 
@@ -33,6 +43,10 @@ public class Server implements Runnable {
         try {
             while ( isConnected ) {
                 Socket client = server.accept ( );
+                in = new ObjectInputStream ( client.getInputStream ( ) );
+                out = new ObjectOutputStream ( client.getOutputStream ( ) );
+                // Perform key distribution
+                PublicKey senderPublicRSAKey = rsaKeyDistribution ( in );
                 // Process the request
                 process ( client );
             }
@@ -53,7 +67,37 @@ public class Server implements Runnable {
     }
 
     /**
+     * Executes the key distribution protocol. The server will receive the public key of the client and will send its
+     * own public key.
+     *
+     * @param in the input stream
+     *
+     * @return the public key of the client
+     *
+     * @throws Exception when the key distribution protocol fails
+     */
+    private PublicKey rsaKeyDistribution ( ObjectInputStream in ) throws Exception {
+        // Extract the public key
+        PublicKey clientPublicRSAKey = ( PublicKey ) in.readObject ( );
+        // Send the public key
+        sendPublicRSAKey ( );
+        return clientPublicRSAKey;
+    }
+
+    /**
+     * Sends the public key of the server to the client.
+     *
+     * @throws IOException when an I/O error occurs when sending the public key
+     */
+    private void sendPublicRSAKey ( ) throws IOException {
+        out.writeObject ( publicRSAKey );
+        out.flush ( );
+    }
+
+    /**
      * Closes the connection and the associated streams.
+     *
+     * @throws IOException if an I/O error occurs when closing the socket
      */
     private void closeConnection ( ) {
         try {

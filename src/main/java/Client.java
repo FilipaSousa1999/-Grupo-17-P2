@@ -1,8 +1,6 @@
-package src.main.java;
-
 import java.io.*;
 import java.math.BigInteger;
-import  java.net.Socket;
+import java.net.Socket;
 
 /**
  * This class represents the sender of the src.main.java.message. It sends the src.main.java.message to the receiver by means of a socket. The use
@@ -10,8 +8,8 @@ import  java.net.Socket;
  */
 public class Client {
     private static final String MAC_KEY = "Mas2142SS!±";
-
-    private final Socket sender;
+    private static final String HOST = "0.0.0.0";
+    private final Socket client;
     private String clientname;
     File file;
     private ObjectInputStream in;
@@ -46,13 +44,13 @@ public class Client {
     public void sendMessage (String message) throws Exception {
         //Agree on a shared secret
         BigInteger secret = agreeOnSharedSecret();
-        //Encrypts the src.main.java.message
+        //Encrypts the message
         byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), secret.toByteArray());
         //Generates the MAC
         byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
-        //Creates the src.main.java.message object
-        Message messageObj = new Message(encryptedMessage, mac);
-        //Sends the encrypted src.main.java.message with MAC
+        //Creates the message object
+        Message messageObj = new Message ( encryptedMessage , mac );
+        //Sends the encrypted message with MAC
         out.writeObject( messageObj );
         //Close connection
         closeConnection();
@@ -146,7 +144,7 @@ public class Client {
      *
      * @throws IOException
      */
-    private void savePrivate_key(BigInteger privateKey, src.main.java.Client client) throws IOException {
+    private void savePrivate_key(BigInteger privateKey, Client client) throws IOException {
         FileWriter f1 = new FileWriter("./src/" + client.get_clientname()+"/private");
         f1.write(String.valueOf(privateKey));
         f1.close();
@@ -161,7 +159,7 @@ public class Client {
      *
      * @throws IOException error in I/O
      */
-    private void savePublic_key(BigInteger publicKey, src.main.java.Client client) throws IOException {
+    private void savePublic_key(BigInteger publicKey, Client client) throws IOException {
 
         File f1 = new File("./src/pki/public_keys/" + client.get_clientname()+"PUk.key");
         //Creating a folder using mkdir() method
