@@ -19,7 +19,11 @@ public class Server implements Runnable {
     private ObjectOutputStream out;
     private final PrivateKey privateRSAKey;
     private final PublicKey publicRSAKey;
+    private final PrivateKey privateDESKey;
+    private final PublicKey publicDESKey;
     private final boolean isConnected;
+
+    private int algorithm_ser;
 
     /**
      * Constructs a Server object by specifying the port number. The server will be then created on the specified port.
@@ -31,11 +35,21 @@ public class Server implements Runnable {
      */
     public Server ( int port ) throws Exception {
         server = new ServerSocket ( port );
+        //algorithm RSA
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );
+        // Another symmetric algorithm DES
+        KeyPair keyPair1 = Encryption.generateKeyPairDES ( );
+        this.privateDESKey = keyPair1.getPrivate ( );
+        this.publicDESKey = keyPair1.getPublic ( );
         savePublic_key(publicRSAKey);
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
+        if (algorithm_ser==1) {
+            //write code to make AES
+        }else if (algorithm_ser==2){
+            //write code to make DES
+        }
     }
 
     @Override

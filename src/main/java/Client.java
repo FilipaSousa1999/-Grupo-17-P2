@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Scanner;
 
 /**
  * This class represents the sender of the src.main.java.message. It sends the src.main.java.message to the receiver by means of a socket. The use
@@ -15,10 +16,13 @@ public class Client {
     private final Socket client;
     private String clientname;
     File file;
+    private int algorithm;
     private ObjectInputStream in;
     private ObjectOutputStream out;
     private final PublicKey publicRSAKey;
     private final PrivateKey privateRSAKey;
+    private final PrivateKey publicDESKey;
+    private final PrivateKey privateDESKey;
     private final PublicKey serverPublicRSAKey;
 
 
@@ -33,11 +37,26 @@ public class Client {
         client = new Socket(HOST, port);
         out = new ObjectOutputStream(client.getOutputStream());
         in = new ObjectInputStream(client.getInputStream());
+        //Choose simmetric algorithm
+        Scanner userInput = new Scanner ( System.in );
+        System.out.println ( "Please choose algorithm" );
+        System.out.println ( "1) AES" );
+        System.out.println ( "2) DES" );
+        algorithm = userInput.nextInt( );
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );
         // Performs the RSA key distribution
         serverPublicRSAKey = rsaKeyDistribution ( );
+        KeyPair keyPair1 = Encryption.generateKeyPair ( );
+        this.privateDESKey = keyPair1.getPrivate ( );
+        this.publicDESKey = keyPair1.getPrivate ( );
+        if (algorithm==1) {
+            //send info to server
+        }else if (algorithm==2){
+            //send info to server
+        }
+
     }
     /**
      * Sends a src.main.java.message to the receiver using the OutputStream of the socket. The src.main.java.message is sent as an object of the
