@@ -45,11 +45,6 @@ public class Server implements Runnable {
         this.publicDESKey = keyPair1.getPublic ( );
         savePublic_key(publicRSAKey);
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
-        if (algorithm_ser==1) {
-            //write code to make AES
-        }else if (algorithm_ser==2){
-            //write code to make DES
-        }
     }
 
     @Override
