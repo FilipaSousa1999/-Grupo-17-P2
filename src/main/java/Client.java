@@ -4,6 +4,7 @@ import java.net.Socket;
 import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.util.Scanner;
 
 /**
  * This class represents the sender of the src.main.java.message. It sends the src.main.java.message to the receiver by means of a socket. The use
@@ -20,6 +21,8 @@ public class Client {
     private final PublicKey publicRSAKey;
     private final PrivateKey privateRSAKey;
     private final PublicKey serverPublicRSAKey;
+    private final boolean isConnected;
+    private BigInteger sharedSecret;
 
 
     /**
@@ -33,12 +36,52 @@ public class Client {
         client = new Socket(HOST, port);
         out = new ObjectOutputStream(client.getOutputStream());
         in = new ObjectInputStream(client.getInputStream());
+        isConnected = true;
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );
         // Performs the RSA key distribution
         serverPublicRSAKey = rsaKeyDistribution ( );
     }
+
+    /**
+     * Executes the client. It reads the file from the console and sends it to the server. It waits for the response and
+     * writes the file to the console and user directory.
+     */
+    public void execute ( ) throws IOException {
+        Scanner usrInput = new Scanner ( System.in );
+        try {
+            System.out.println ( "Please enter your name" );
+            String userName = usrInput.nextLine ( );
+            clientname = userName;
+            // Create folder where we will store private key
+            CreateFolder(clientname);
+            CreateFolderPrivate_keys(clientname);
+            //Save keys
+            savePrivate_key(privateRSAKey, clientname);
+            savePublic_key(publicRSAKey, clientname);
+            //Agree on a shared secret
+            sharedSecret = agreeOnSharedSecret ( serverPublicRSAKey );
+            //Create folder where we will store the files
+            CreateFolderFiles(clientname);
+            while ( isConnected ) {
+                // Reads the message to extract the path of the file
+                System.out.println ( "GET : nome do ficheiro.txt" );
+                String request = usrInput.nextLine ( );
+                // Request the file
+                sendMessage ( request );
+                // Waits for the response
+                processResponse ( RequestUtils.getFileNameFromRequest ( request ) );
+            }
+            // Close connection
+            closeConnection ( );
+        } catch (Exception e ) {
+            throw new RuntimeException ( e );
+        }
+        // Close connection
+        closeConnection ( );
+    }
+
     /**
      * Sends a src.main.java.message to the receiver using the OutputStream of the socket. The src.main.java.message is sent as an object of the
      * {@link Message} class.
@@ -48,20 +91,17 @@ public class Client {
      * @throws Exception when the encryption or the integrity generation fails
      */
     public void sendMessage (String message) throws Exception {
-        //Agree on a shared secret
-        BigInteger secret = agreeOnSharedSecret();
         //Encrypts the message
-        byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), secret.toByteArray());
+        byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), sharedSecret.toByteArray());
         //Generates the MAC
         byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
         //Creates the message object
         Message messageObj = new Message ( encryptedMessage , mac );
         //Sends the encrypted message with MAC
         out.writeObject( messageObj );
-        //Close connection
-        closeConnection();
-
+        out.flush();
     }
+
     /**
      * Performs the Diffie-Hellman algorithm to agree on a shared private key.
      *
@@ -69,25 +109,52 @@ public class Client {
      *
      * @throws Exception when the Diffie-Hellman algorithm fails
      */
-    private BigInteger agreeOnSharedSecret ( ) throws Exception {
+    private BigInteger agreeOnSharedSecret ( PublicKey serverPublicRSAKey ) throws Exception {
         // Generates a private key
-        BigInteger privateKey = DiffieHellman.generatePrivateKey ( );
-        BigInteger publicKey = DiffieHellman.generatePublicKey ( privateKey );
-        // Sends the public key to the server
-        sendPublicKey ( publicKey );
+        BigInteger privateDHKey = DiffieHellman.generatePrivateKey ( );
+        BigInteger publicDHKey = DiffieHellman.generatePublicKey ( privateDHKey );
+        // Sends the public key to the server encrypted
+        sendPublicDHKey ( Encryption.encryptRSA ( publicDHKey.toByteArray ( ) , privateRSAKey ) );
         // Waits for the server to send his public key
-        BigInteger clientPublicKey = ( BigInteger ) in.readObject ( );
-        // Generates the common private key
-        return DiffieHellman.computePrivateKey ( clientPublicKey , privateKey );
+        BigInteger serverPublicKey = new BigInteger ( Encryption.decryptRSA ( ( byte[] ) in.readObject ( ) , serverPublicRSAKey ) );
+        // Generates the shared secret
+        return DiffieHellman.computePrivateKey ( serverPublicKey , privateDHKey );
     }
+
     /**
-     * Sends the public key to the receiver.
+     * Reads the response from the server and writes the file to the console and user directory.
+     *
+     * @param fileName the name of the file to write
+     */
+    private void processResponse ( String fileName ) {
+        try {
+            Message response = ( Message ) in.readObject ( );
+            System.out.println ( "File received" );
+            // Extracts and decrypt the message
+            byte[] decryptedMessage = Encryption.decryptMessage ( response.getMessage ( ) , sharedSecret.toByteArray ( ) );
+            // Computes the digest of the received message
+            byte[] computedDigest = Integrity.generateMAC ( decryptedMessage , MAC_KEY);
+            // Verifies the integrity of the message
+            if ( ! Integrity.verifyMAC ( response.getMac ( ) , computedDigest ) ) {
+                throw new RuntimeException ( "The integrity of the message is not verified" );
+            }
+            System.out.println ( new String ( decryptedMessage ) );
+            FileHandler.writeFile ( "./" +clientname+"/files/" + fileName , decryptedMessage );
+        } catch ( IOException | ClassNotFoundException e ) {
+            e.printStackTrace ( );
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Sends the public key to the server.
      *
      * @param publicKey the public key to send
      *
      * @throws Exception when the public key cannot be sent
      */
-    private void sendPublicKey ( BigInteger publicKey ) throws Exception {
+    private void sendPublicDHKey ( byte[] publicKey ) throws Exception {
         out.writeObject ( publicKey );
     }
 
@@ -127,10 +194,6 @@ public class Client {
         in.close ( );
     }
 
-    public String get_clientname(){
-        return this.clientname;
-    }
-
     /**
      * Function creates private file with sender's name
      *
@@ -164,6 +227,22 @@ public class Client {
     }
 
     /**
+     * Function creates client's files folder
+     *
+     * @param clientname value to create folder with client's name
+     */
+    public void CreateFolderFiles(String clientname) {
+        File f1 = new File("./" +clientname+"/files");
+        //Creating a folder using mkdir() method
+        boolean bool = f1.mkdir();
+        if(bool){
+            System.out.println("Folder files was created successfully");
+        }else{
+            System.out.println("Folder already exists!");
+        }
+    }
+
+    /**
      * Functions saves private key
      *
      * @param privateKey value of private key
@@ -188,30 +267,9 @@ public class Client {
      * @throws IOException error in I/O
      */
     public void savePublic_key(PublicKey publicKey, String userName) throws IOException {
-
-        /*File f1 = new File("./pki/public_keys/" + client.get_clientname()+"PUk.key");
-        //Creating a folder using mkdir() method
-        boolean bool = f1.mkdir();
-        if(bool){
-            System.out.println("Folder private is created successfully");
-        }else{
-            System.out.println("Error Found!");
-        }*/
-
         FileWriter f2 = new FileWriter("./pki/public_keys/" + userName+"PUk.key");
         f2.write(String.valueOf(publicKey));
         f2.close();
     }
 
-    public void setClientname(String clientname) {
-        this.clientname = clientname;
-    }
-
-    public PublicKey getPublicRSAKey() {
-        return publicRSAKey;
-    }
-
-    public PrivateKey getPrivateRSAKey() {
-        return privateRSAKey;
-    }
 }

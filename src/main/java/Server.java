@@ -50,7 +50,7 @@ public class Server implements Runnable {
                 // Agree on a shared secret
                 BigInteger sharedSecret = agreeOnSharedSecret ( clientPublicRSAKey );
                 // Process the request
-                process ( client , sharedSecret);
+                process ( client , sharedSecret , in, out );
             }
             closeConnection ( );
         } catch ( Exception e ) {
@@ -63,8 +63,8 @@ public class Server implements Runnable {
      *
      * @throws IOException if an I/O error occurs when reading stream header
      */
-    private void process ( Socket client , BigInteger sharedSecret) throws IOException {
-        ClientHandler clientHandler = new ClientHandler ( client , sharedSecret);
+    private void process ( Socket client , BigInteger sharedSecret , ObjectInputStream in, ObjectOutputStream out) throws IOException {
+        ClientHandler clientHandler = new ClientHandler ( client , sharedSecret , in , out);
         clientHandler.start ( );
     }
 

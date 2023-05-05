@@ -10,11 +10,11 @@ import java.net.Socket;
  */
 public class ClientHandler extends Thread {
 
-    private final ObjectInputStream in;
-    private final ObjectOutputStream out;
     private final Socket client;
     private final boolean isConnected;
     private BigInteger sharedSecret;
+    private final ObjectInputStream in;
+    private final ObjectOutputStream out;
 
     private static final String MAC_KEY = "Mas2142SS!±";
 
@@ -26,11 +26,11 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public ClientHandler ( Socket client , BigInteger sharedSecret) throws IOException {
+    public ClientHandler ( Socket client , BigInteger sharedSecret , ObjectInputStream in , ObjectOutputStream out) throws IOException {
         this.client = client;
         this.sharedSecret = sharedSecret;
-        in = new ObjectInputStream ( client.getInputStream ( ) );
-        out = new ObjectOutputStream ( client.getOutputStream ( ) );
+        this.in = in;
+        this.out = out;
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
     }
 
@@ -49,7 +49,9 @@ public class ClientHandler extends Thread {
                 if ( ! Integrity.verifyMAC ( message.getMac ( ) , computedDigest ) ) {
                     throw new RuntimeException ( "The integrity of the message is not verified" );
                 }
-                String request = new String ( message.getMessage ( ) );
+                String request = new String ( decryptedMessage  );
+                System.out.println( request );
+
                 // Reads the file and sends it to the client
                 byte[] content = FileHandler.readFile ( RequestUtils.getAbsoluteFilePath ( request ) );
                 sendFile ( content );
