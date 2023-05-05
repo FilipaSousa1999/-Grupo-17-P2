@@ -136,8 +136,6 @@ public class Server implements Runnable {
      * @throws IOException error in I/O
      */
     private void savePublic_key(PublicKey publicKey) throws IOException {
-
-        //File f1 = new File("./pki/public_keys/" + client.get_clientname()+"PUk.key");
         FileWriter f2 = new FileWriter("./pki/public_keys/serverPUk.key");
         f2.write(String.valueOf(publicKey));
         f2.close();
@@ -145,8 +143,6 @@ public class Server implements Runnable {
 
     /**
      * Closes the connection and the associated streams.
-     *
-     * @throws IOException if an I/O error occurs when closing the socket
      */
     private void closeConnection ( ) {
         try {

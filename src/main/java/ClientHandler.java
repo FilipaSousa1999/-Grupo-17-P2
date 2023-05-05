@@ -1,8 +1,11 @@
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This class represents the client handler. It handles the communication with the client. It reads the file from the
@@ -50,11 +53,23 @@ public class ClientHandler extends Thread {
                     throw new RuntimeException ( "The integrity of the message is not verified" );
                 }
                 String request = new String ( decryptedMessage  );
-                System.out.println( request );
-
-                // Reads the file and sends it to the client
-                byte[] content = FileHandler.readFile ( RequestUtils.getAbsoluteFilePath ( request ) );
-                sendFile ( content );
+                Pattern pattern = Pattern.compile ( "GET : (\\w+.txt)" );
+                Matcher matcher = pattern.matcher ( request );
+                boolean matchFound = matcher.find ( );
+                if ( matchFound ) {
+                    System.out.println(request);
+                    File file = new File(RequestUtils.getAbsoluteFilePath(request));
+                    if (file.exists()) {
+                        // Reads the file and sends it to the client
+                        byte[] content = FileHandler.readFile(RequestUtils.getAbsoluteFilePath(request));
+                        sendFile(content);
+                    } else {
+                        sendMessage("ERROR - FILE NOT FOUND");
+                    }
+                }
+                else {
+                    System.out.println("Invalid request");
+                }
             }
             // Close connection
             closeConnection ( );
@@ -78,6 +93,23 @@ public class ClientHandler extends Thread {
         byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray());
         //Generates the MAC
         byte[] mac = Integrity.generateMAC (content, MAC_KEY );
+        Message response = new Message ( encryptedMessage , mac );
+        out.writeObject ( response );
+        out.flush ( );
+    }
+
+    /**
+     * Sends the "ERROR - FILE NOT FOUND" to the client
+     *
+     * @param message the content of the message to send
+     *
+     * @throws Exception when an error occurs when sending the file
+     */
+    private void sendMessage ( String message ) throws Exception {
+        //Encrypts the message
+        byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), sharedSecret.toByteArray());
+        //Generates the MAC
+        byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY );
         Message response = new Message ( encryptedMessage , mac );
         out.writeObject ( response );
         out.flush ( );

@@ -5,6 +5,8 @@ import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This class represents the sender of the src.main.java.message. It sends the src.main.java.message to the receiver by means of a socket. The use
@@ -14,10 +16,10 @@ public class Client {
     private static final String MAC_KEY = "Mas2142SS!±";
     private static final String HOST = "0.0.0.0";
     private final Socket client;
-    private String clientname;
+    private String clientName;
     File file;
-    private ObjectInputStream in;
-    private ObjectOutputStream out;
+    private final ObjectInputStream in;
+    private final ObjectOutputStream out;
     private final PublicKey publicRSAKey;
     private final PrivateKey privateRSAKey;
     private final PublicKey serverPublicRSAKey;
@@ -53,25 +55,33 @@ public class Client {
         try {
             System.out.println ( "Please enter your name" );
             String userName = usrInput.nextLine ( );
-            clientname = userName;
+            clientName = userName;
             // Create folder where we will store private key
-            CreateFolder(clientname);
-            CreateFolderPrivate_keys(clientname);
+            CreateFolder(clientName);
+            CreateFolderPrivate_keys(clientName);
             //Save keys
-            savePrivate_key(privateRSAKey, clientname);
-            savePublic_key(publicRSAKey, clientname);
+            savePrivate_key(privateRSAKey, clientName);
+            savePublic_key(publicRSAKey, clientName);
             //Agree on a shared secret
             sharedSecret = agreeOnSharedSecret ( serverPublicRSAKey );
             //Create folder where we will store the files
-            CreateFolderFiles(clientname);
+            CreateFolderFiles(clientName);
             while ( isConnected ) {
                 // Reads the message to extract the path of the file
-                System.out.println ( "GET : nome do ficheiro.txt" );
+                System.out.println ( "GET : filename.txt" );
                 String request = usrInput.nextLine ( );
                 // Request the file
                 sendMessage ( request );
-                // Waits for the response
-                processResponse ( RequestUtils.getFileNameFromRequest ( request ) );
+                Pattern pattern = Pattern.compile ( "GET : (\\w+.txt)" );
+                Matcher matcher = pattern.matcher ( request );
+                boolean matchFound = matcher.find ( );
+                if ( matchFound ) {
+                    // Waits for the response
+                    processResponse(RequestUtils.getFileNameFromRequest(request));
+                }
+                else {
+                    System.out.println( "Invalid request - command must be" );
+                }
             }
             // Close connection
             closeConnection ( );
@@ -91,15 +101,15 @@ public class Client {
      * @throws Exception when the encryption or the integrity generation fails
      */
     public void sendMessage (String message) throws Exception {
-        //Encrypts the message
-        byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), sharedSecret.toByteArray());
-        //Generates the MAC
-        byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
-        //Creates the message object
-        Message messageObj = new Message ( encryptedMessage , mac );
-        //Sends the encrypted message with MAC
-        out.writeObject( messageObj );
-        out.flush();
+            //Encrypts the message
+            byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), sharedSecret.toByteArray());
+            //Generates the MAC
+            byte[] mac = Integrity.generateMAC(message.getBytes(), MAC_KEY);
+            //Creates the message object
+            Message messageObj = new Message(encryptedMessage, mac);
+            //Sends the encrypted message with MAC
+            out.writeObject(messageObj);
+            out.flush();
     }
 
     /**
@@ -129,7 +139,6 @@ public class Client {
     private void processResponse ( String fileName ) {
         try {
             Message response = ( Message ) in.readObject ( );
-            System.out.println ( "File received" );
             // Extracts and decrypt the message
             byte[] decryptedMessage = Encryption.decryptMessage ( response.getMessage ( ) , sharedSecret.toByteArray ( ) );
             // Computes the digest of the received message
@@ -139,7 +148,9 @@ public class Client {
                 throw new RuntimeException ( "The integrity of the message is not verified" );
             }
             System.out.println ( new String ( decryptedMessage ) );
-            FileHandler.writeFile ( "./" +clientname+"/files/" + fileName , decryptedMessage );
+            if (!new String(decryptedMessage).equals("ERROR - FILE NOT FOUND")) {
+                FileHandler.writeFile("./" + clientName + "/files/" + fileName, decryptedMessage);
+            }
         } catch ( IOException | ClassNotFoundException e ) {
             e.printStackTrace ( );
         } catch (Exception e) {
@@ -197,42 +208,42 @@ public class Client {
     /**
      * Function creates private file with sender's name
      *
-     * @param clientname value to create file with sender's name
+     * @param clientName value to create file with sender's name
      */
-    public void CreateFolder(String clientname) {
-        file = new File("./" +clientname);
+    public void CreateFolder(String clientName) {
+        file = new File("./" +clientName);
         //Creating a folder using mkdir() method
         boolean bool = file.mkdir();
         if(bool){
             System.out.println("Folder with client name is created successfully");
         }else{
-            System.out.println("Error Found!");
+            System.out.println("Folder already exists!");
         }
     }
 
     /**
      * Function creates private file with sender's name
      *
-     * @param clientname value to create private file with sender's name
+     * @param clientName value to create private file with sender's name
      */
-    public void CreateFolderPrivate_keys(String clientname) {
-        File f1 = new File("./" +clientname+"/private");
+    public void CreateFolderPrivate_keys(String clientName) {
+        File f1 = new File("./" +clientName+"/private");
         //Creating a folder using mkdir() method
         boolean bool = f1.mkdir();
         if(bool){
             System.out.println("Folder private is created successfully");
         }else{
-            System.out.println("Error Found!");
+            System.out.println("Folder already exists!");
         }
     }
 
     /**
      * Function creates client's files folder
      *
-     * @param clientname value to create folder with client's name
+     * @param clientName value to create folder with client's name
      */
-    public void CreateFolderFiles(String clientname) {
-        File f1 = new File("./" +clientname+"/files");
+    public void CreateFolderFiles(String clientName) {
+        File f1 = new File("./" +clientName+"/files");
         //Creating a folder using mkdir() method
         boolean bool = f1.mkdir();
         if(bool){
