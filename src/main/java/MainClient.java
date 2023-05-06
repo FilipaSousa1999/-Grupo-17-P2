@@ -4,7 +4,7 @@ public class MainClient {
 
     public static void main ( String[] args ) throws Exception {
         int a = 0;
-        while (a==5) {
+        while (a!=5) {
             Client client = new Client( 8000);
             Scanner userInput = new Scanner ( System.in );
             System.out.println ( "Please enter your name" );

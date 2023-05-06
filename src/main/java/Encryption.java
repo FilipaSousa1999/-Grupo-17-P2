@@ -28,24 +28,6 @@ public class Encryption {
         return cipher.doFinal ( message );
     }
 
-    public static KeyPair generateKeyPairDES ( ) throws Exception {
-        KeyPairGenerator keyPairGenerator = KeyPairGenerator.getInstance ( "DES" );
-        keyPairGenerator.initialize ( 2048 );
-        return keyPairGenerator.generateKeyPair ( );
-    }
-
-    public static byte[] encryptDES ( byte[] message , Key key ) throws Exception {
-        Cipher cipher = Cipher.getInstance ( "DES" );
-        cipher.init ( Cipher.ENCRYPT_MODE , key );
-        return cipher.doFinal ( message );
-    }
-
-    public static byte[] decryptDES ( byte[] message , Key key ) throws Exception {
-        Cipher cipher = Cipher.getInstance ( "DES" );
-        cipher.init ( Cipher.DECRYPT_MODE , key );
-        return cipher.doFinal ( message );
-    }
-
     /**
      * @param message   the src.main.java.message to be encrypted
      * @param secretKey the secret key used to encrypt the src.main.java.message
@@ -94,4 +76,6 @@ public class Encryption {
         cipher.init ( Cipher.ENCRYPT_MODE , secreteKeySpec );
         return cipher.doFinal ( message );
     }
+
+
 }

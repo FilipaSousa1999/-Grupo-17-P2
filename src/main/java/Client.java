@@ -21,8 +21,6 @@ public class Client {
     private ObjectOutputStream out;
     private final PublicKey publicRSAKey;
     private final PrivateKey privateRSAKey;
-    private final PrivateKey publicDESKey;
-    private final PrivateKey privateDESKey;
     private final PublicKey serverPublicRSAKey;
 
 
@@ -39,23 +37,27 @@ public class Client {
         in = new ObjectInputStream(client.getInputStream());
         //Choose simmetric algorithm
         Scanner userInput = new Scanner ( System.in );
-        System.out.println ( "Please choose algorithm" );
-        System.out.println ( "1) AES" );
-        System.out.println ( "2) DES" );
-        algorithm = userInput.nextInt( );
+        do {
+            algorithm = 0;
+            System.out.println("Please select algorithm");
+            System.out.println("1) AES");
+            System.out.println("2) DES");
+            algorithm = userInput.nextInt();
+            System.out.println(algorithm);
+            if (algorithm == 1) {
+                algorithm = 1;
+            } else if (algorithm == 2) {
+                algorithm = 2;
+            } else {
+                algorithm = 0;
+            }
+        } while (algorithm==0);
+        //algorithm!=1 || algorithm!=2
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );
         // Performs the RSA key distribution
         serverPublicRSAKey = rsaKeyDistribution ( );
-        KeyPair keyPair1 = Encryption.generateKeyPair ( );
-        this.privateDESKey = keyPair1.getPrivate ( );
-        this.publicDESKey = keyPair1.getPrivate ( );
-        if (algorithm==1) {
-            //send info to server
-        }else if (algorithm==2){
-            //send info to server
-        }
 
     }
     /**
@@ -67,16 +69,29 @@ public class Client {
      * @throws Exception when the encryption or the integrity generation fails
      */
     public void sendMessage (String message) throws Exception {
+        byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
         //Agree on a shared secret
         BigInteger secret = agreeOnSharedSecret();
+
+        //Encrypts the message with selected algorithm
+        if (this.algorithm == 1) {
+            byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), secret.toByteArray());
+            Message messageObj = new Message ( encryptedMessage , mac );
+            out.writeObject( messageObj );
+        } else if (this.algorithm == 2) {
+            byte[] encryptedMessage = Encryption.encryptMessageDES(message.getBytes(), secret.toByteArray());
+            Message messageObj = new Message ( encryptedMessage , mac );
+            out.writeObject( messageObj );
+        }
+
         //Encrypts the message
-        byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), secret.toByteArray());
+        //byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), secret.toByteArray());
         //Generates the MAC
-        byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
+        //byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
         //Creates the message object
-        Message messageObj = new Message ( encryptedMessage , mac );
+        //Message messageObj = new Message ( encryptedMessage , mac );
         //Sends the encrypted message with MAC
-        out.writeObject( messageObj );
+        //out.writeObject( messageObj );
         //Close connection
         closeConnection();
 

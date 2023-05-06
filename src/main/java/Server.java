@@ -19,8 +19,6 @@ public class Server implements Runnable {
     private ObjectOutputStream out;
     private final PrivateKey privateRSAKey;
     private final PublicKey publicRSAKey;
-    private final PrivateKey privateDESKey;
-    private final PublicKey publicDESKey;
     private final boolean isConnected;
 
     private int algorithm_ser;
@@ -39,10 +37,6 @@ public class Server implements Runnable {
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );
-        // Another symmetric algorithm DES
-        KeyPair keyPair1 = Encryption.generateKeyPairDES ( );
-        this.privateDESKey = keyPair1.getPrivate ( );
-        this.publicDESKey = keyPair1.getPublic ( );
         savePublic_key(publicRSAKey);
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
     }

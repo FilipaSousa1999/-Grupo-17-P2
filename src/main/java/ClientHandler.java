@@ -15,6 +15,7 @@ public class ClientHandler extends Thread {
     private final Socket client;
     private final boolean isConnected;
     private BigInteger sharedSecret;
+    private int algorithm;
 
     private static final String MAC_KEY = "Mas2142SS!±";
 
@@ -41,18 +42,38 @@ public class ClientHandler extends Thread {
             while ( isConnected ) {
                 // Reads the message to extract the path of the file
                 Message message = ( Message ) in.readObject ( );
-                // Extracts and decrypt the message
-                byte[] decryptedMessage = Encryption.decryptMessage ( message.getMessage ( ) , sharedSecret.toByteArray ( ) );
-                // Computes the digest of the received message
-                byte[] computedDigest = Integrity.generateMAC ( decryptedMessage , MAC_KEY);
-                // Verifies the integrity of the message
-                if ( ! Integrity.verifyMAC ( message.getMac ( ) , computedDigest ) ) {
-                    throw new RuntimeException ( "The integrity of the message is not verified" );
+
+                if (this.algorithm == 1) {
+                    // Extracts and decrypt the message
+                    byte[] decryptedMessage = Encryption.decryptMessage ( message.getMessage ( ) , sharedSecret.toByteArray ( ) );
+                    // Computes the digest of the received message
+                    byte[] computedDigest = Integrity.generateMAC ( decryptedMessage , MAC_KEY);
+                    if ( ! Integrity.verifyMAC ( message.getMac ( ) , computedDigest ) ) {
+                        throw new RuntimeException ( "The integrity of the message is not verified" );
+                    }
+                } else if (this.algorithm == 2) {
+                    // Extracts and decrypt the message
+                    byte[] decryptedMessage = Encryption.decryptMessageDES ( message.getMessage ( ) , sharedSecret.toByteArray ( ) );
+                    // Computes the digest of the received message
+                    byte[] computedDigest = Integrity.generateMAC ( decryptedMessage , MAC_KEY);
+                    if ( ! Integrity.verifyMAC ( message.getMac ( ) , computedDigest ) ) {
+                        throw new RuntimeException ( "The integrity of the message is not verified" );
+                    }
                 }
+
+                // Extracts and decrypt the message
+                // byte[] decryptedMessage = Encryption.decryptMessage ( message.getMessage ( ) , sharedSecret.toByteArray ( ) );
+                // Computes the digest of the received message
+                //byte[] computedDigest = Integrity.generateMAC ( decryptedMessage , MAC_KEY);
+                // Verifies the integrity of the message
+                // if ( ! Integrity.verifyMAC ( message.getMac ( ) , computedDigest ) ) {
+                //    throw new RuntimeException ( "The integrity of the message is not verified" );
+                //}
                 String request = new String ( message.getMessage ( ) );
                 // Reads the file and sends it to the client
                 byte[] content = FileHandler.readFile ( RequestUtils.getAbsoluteFilePath ( request ) );
-                sendFile ( content );
+                sendFile ( content, this.algorithm  );
+
             }
             // Close connection
             closeConnection ( );
@@ -71,14 +92,27 @@ public class ClientHandler extends Thread {
      *
      * @throws Exception when an error occurs when sending the file
      */
-    private void sendFile ( byte[] content ) throws Exception {
+    private void sendFile ( byte[] content, int algorithm  ) throws Exception {
+        if (algorithm == 1) {
+            byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray());
+            byte[] mac = Integrity.generateMAC (content, MAC_KEY );
+            Message response = new Message ( encryptedMessage , mac );
+            out.writeObject ( response );
+            out.flush ( );
+        } else if (algorithm == 2) {
+            byte[] encryptedMessage = Encryption.encryptMessageDES(content, sharedSecret.toByteArray());
+            byte[] mac = Integrity.generateMAC (content, MAC_KEY );
+            Message response = new Message ( encryptedMessage , mac );
+            out.writeObject ( response );
+            out.flush ( );
+        }
         //Encrypts the content
-        byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray());
+        //byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray());
         //Generates the MAC
-        byte[] mac = Integrity.generateMAC (content, MAC_KEY );
-        Message response = new Message ( encryptedMessage , mac );
-        out.writeObject ( response );
-        out.flush ( );
+
+        //Message response = new Message ( encryptedMessage , mac );
+        //out.writeObject ( response );
+        //out.flush ( );
     }
 
 
