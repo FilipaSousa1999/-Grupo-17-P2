@@ -42,7 +42,7 @@ public class ClientHandler extends Thread {
             while ( isConnected ) {
                 // Reads the message to extract the path of the file
                 Message message = ( Message ) in.readObject ( );
-
+                //Make decryption with selected algorithm
                 if (this.algorithm == 1) {
                     // Extracts and decrypt the message
                     byte[] decryptedMessage = Encryption.decryptMessage ( message.getMessage ( ) , sharedSecret.toByteArray ( ) );
@@ -93,6 +93,7 @@ public class ClientHandler extends Thread {
      * @throws Exception when an error occurs when sending the file
      */
     private void sendFile ( byte[] content, int algorithm  ) throws Exception {
+        //Make encription with selected algorithm
         if (algorithm == 1) {
             byte[] encryptedMessage = Encryption.encryptMessage(content, sharedSecret.toByteArray());
             byte[] mac = Integrity.generateMAC (content, MAC_KEY );
