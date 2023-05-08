@@ -21,6 +21,8 @@ public class Server implements Runnable {
     private final PublicKey publicRSAKey;
     private final boolean isConnected;
 
+    private int algorithm_ser;
+
     /**
      * Constructs a Server object by specifying the port number. The server will be then created on the specified port.
      * The server will be accepting connections from all local addresses.
@@ -31,6 +33,7 @@ public class Server implements Runnable {
      */
     public Server ( int port ) throws Exception {
         server = new ServerSocket ( port );
+        //algorithm RSA
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );

@@ -28,7 +28,7 @@ public class Encryption {
         return cipher.doFinal ( message );
     }
 
-    /**
+    /** AES
      * @param message   the src.main.java.message to be encrypted
      * @param secretKey the secret key used to encrypt the src.main.java.message
      *
@@ -43,7 +43,7 @@ public class Encryption {
         cipher.init ( Cipher.DECRYPT_MODE , secreteKeySpec );
         return cipher.doFinal ( message );
     }
-    /**
+    /** AES
      * @param message   the src.main.java.message to be decrypted
      * @param secretKey the secret key used to decrypt the src.main.java.message
      *
@@ -58,4 +58,39 @@ public class Encryption {
         cipher.init ( Cipher.ENCRYPT_MODE , secreteKeySpec );
         return cipher.doFinal ( message );
     }
+
+
+    /** DES
+     * @param message the src.main.java.message to be encrypted
+     * @param secretKey the secret key used to decrypt the src.main.java.message
+     *
+     * @return the encrypted src.main.java.message as an array of bytes
+     *
+     * @throws Exception when the decryption fails
+     */
+    public static byte[] decryptMessageDES ( byte[] message , byte[] secretKey ) throws Exception {
+        byte[] secretKeyPadded = ByteBuffer.allocate(16).put(secretKey).array();
+        SecretKeySpec secreteKeySpec = new SecretKeySpec(secretKeyPadded, "DES");
+        Cipher cipher = Cipher.getInstance("DES/ECB/PKCS5Padding");
+        cipher.init(Cipher.DECRYPT_MODE, secreteKeySpec);
+        return cipher.doFinal(message);
+    }
+
+    /** DES
+     * @param message the src.main.java.message to be decrypted
+     * @param secretKey the secret key used to decrypt the src.main.java.message
+     *
+     * @return the decrypted src.main.java.message as an array of bytes
+     *
+     * @throws Exception when the encryption fails
+     */
+    public static byte[] encryptMessageDES ( byte[] message , byte[] secretKey ) throws Exception {
+        byte[] secretKeyPadded = ByteBuffer.allocate ( 16 ).put ( secretKey ).array ( );
+        SecretKeySpec secreteKeySpec = new SecretKeySpec ( secretKeyPadded , "DES" );
+        Cipher cipher = Cipher.getInstance ( "DES/ECB/PKCS5Padding" );
+        cipher.init ( Cipher.ENCRYPT_MODE , secreteKeySpec );
+        return cipher.doFinal ( message );
+    }
+
+
 }
