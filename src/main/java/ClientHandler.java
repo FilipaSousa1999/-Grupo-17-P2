@@ -1,8 +1,11 @@
+import java.io.File;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.math.BigInteger;
 import java.net.Socket;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * This class represents the client handler. It handles the communication with the client. It reads the file from the
@@ -10,12 +13,12 @@ import java.net.Socket;
  */
 public class ClientHandler extends Thread {
 
-    private final ObjectInputStream in;
-    private final ObjectOutputStream out;
     private final Socket client;
     private final boolean isConnected;
     private BigInteger sharedSecret;
     private int algorithm;
+    private final ObjectInputStream in;
+    private final ObjectOutputStream out;
 
     private static final String MAC_KEY = "Mas2142SS!±";
 
@@ -27,11 +30,11 @@ public class ClientHandler extends Thread {
      *
      * @throws IOException when an I/O error occurs when creating the socket
      */
-    public ClientHandler ( Socket client , BigInteger sharedSecret) throws IOException {
+    public ClientHandler ( Socket client , BigInteger sharedSecret , ObjectInputStream in , ObjectOutputStream out) throws IOException {
         this.client = client;
         this.sharedSecret = sharedSecret;
-        in = new ObjectInputStream ( client.getInputStream ( ) );
-        out = new ObjectOutputStream ( client.getOutputStream ( ) );
+        this.in = in;
+        this.out = out;
         isConnected = true; // TODO: Check if this is necessary or if it should be controlled
     }
 
@@ -66,14 +69,24 @@ public class ClientHandler extends Thread {
                 // Computes the digest of the received message
                 //byte[] computedDigest = Integrity.generateMAC ( decryptedMessage , MAC_KEY);
                 // Verifies the integrity of the message
-                // if ( ! Integrity.verifyMAC ( message.getMac ( ) , computedDigest ) ) {
-                //    throw new RuntimeException ( "The integrity of the message is not verified" );
-                //}
-                String request = new String ( message.getMessage ( ) );
-                // Reads the file and sends it to the client
-                byte[] content = FileHandler.readFile ( RequestUtils.getAbsoluteFilePath ( request ) );
-                sendFile ( content, this.algorithm  );
-
+                String request = new String ( decryptedMessage  );
+                Pattern pattern = Pattern.compile ( "GET : (\\w+.txt)" );
+                Matcher matcher = pattern.matcher ( request );
+                boolean matchFound = matcher.find ( );
+                if ( matchFound ) {
+                    System.out.println(request);
+                    File file = new File(RequestUtils.getAbsoluteFilePath(request));
+                    if (file.exists()) {
+                        // Reads the file and sends it to the client
+                        byte[] content = FileHandler.readFile(RequestUtils.getAbsoluteFilePath(request));
+                        sendFile(content);
+                    } else {
+                        sendMessage("ERROR - FILE NOT FOUND");
+                    }
+                }
+                else {
+                    System.out.println("Invalid request");
+                }
             }
             // Close connection
             closeConnection ( );
@@ -114,6 +127,23 @@ public class ClientHandler extends Thread {
         //Message response = new Message ( encryptedMessage , mac );
         //out.writeObject ( response );
         //out.flush ( );
+    }
+
+    /**
+     * Sends the "ERROR - FILE NOT FOUND" to the client
+     *
+     * @param message the content of the message to send
+     *
+     * @throws Exception when an error occurs when sending the file
+     */
+    private void sendMessage ( String message ) throws Exception {
+        //Encrypts the message
+        byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), sharedSecret.toByteArray());
+        //Generates the MAC
+        byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY );
+        Message response = new Message ( encryptedMessage , mac );
+        out.writeObject ( response );
+        out.flush ( );
     }
 
 
