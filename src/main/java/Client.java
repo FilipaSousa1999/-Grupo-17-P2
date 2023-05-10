@@ -40,7 +40,8 @@ public class Client {
         client = new Socket(HOST, port);
         out = new ObjectOutputStream(client.getOutputStream());
         in = new ObjectInputStream(client.getInputStream());
-        //Choose simmetric algorithm
+        isConnected = true;
+        //Choose algorithm
         Scanner userInput = new Scanner ( System.in );
         do {
             algorithm = 0;
@@ -49,21 +50,12 @@ public class Client {
             System.out.println("2) DES");
             algorithm = userInput.nextInt();
             System.out.println(algorithm);
-            if (algorithm == 1) {
-                algorithm = 1;
-            } else if (algorithm == 2) {
-                algorithm = 2;
-            } else {
-                algorithm = 0;
-            }
-        } while (algorithm==0);
-        //algorithm!=1 || algorithm!=2
+        } while ( algorithm == 0 );
         KeyPair keyPair = Encryption.generateKeyPair ( );
         this.privateRSAKey = keyPair.getPrivate ( );
         this.publicRSAKey = keyPair.getPublic ( );
         // Performs the RSA key distribution
         serverPublicRSAKey = rsaKeyDistribution ( );
-
     }
 
     /**
@@ -72,12 +64,11 @@ public class Client {
      */
     public void execute ( ) throws IOException {
         requestCounter = 0;
-        while (a!=5) {
+        //while (requestCounter!=5) {
         Scanner usrInput = new Scanner ( System.in );
         try {
             System.out.println ( "Please enter your name" );
-            String userName = usrInput.nextLine ( );
-            clientName = userName;
+            clientName = usrInput.nextLine ( );
             // Create folder where we will store private key
             CreateFolder(clientName);
             CreateFolderPrivate_keys(clientName);
@@ -88,9 +79,10 @@ public class Client {
             sharedSecret = agreeOnSharedSecret ( serverPublicRSAKey );
             //Create folder where we will store the files
             CreateFolderFiles(clientName);
+            sendAlgorithm(algorithm);
             while ( isConnected ) {
-              while (a<5) {
-                a++;
+              while (requestCounter<5) {
+                requestCounter++;
                 // Reads the message to extract the path of the file
                 System.out.println ( "GET : filename.txt" );
                 String request = usrInput.nextLine ( );
@@ -106,7 +98,7 @@ public class Client {
                 else {
                     System.out.println( "Invalid request - command must be" );
                 }
-                }
+               }
             }
             // Close connection
             closeConnection ( );
@@ -115,7 +107,7 @@ public class Client {
         }
         // Close connection
         closeConnection ( );
-        }
+        //}
     }
 
     /**
@@ -126,35 +118,20 @@ public class Client {
      *
      * @throws Exception when the encryption or the integrity generation fails
      */
-    public void sendMessage (String message) throws Exception {
+    public void sendMessage ( String message ) throws Exception {
         byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
-        //Agree on a shared secret
-        BigInteger secret = agreeOnSharedSecret();
-
         //Encrypts the message with selected algorithm
         if (this.algorithm == 1) {
-            byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), secret.toByteArray());
+            byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), sharedSecret.toByteArray());
             Message messageObj = new Message ( encryptedMessage , mac );
             out.writeObject( messageObj );
             out.flush();
         } else if (this.algorithm == 2) {
-            byte[] encryptedMessage = Encryption.encryptMessageDES(message.getBytes(), secret.toByteArray());
+            byte[] encryptedMessage = Encryption.encryptMessageDES(message.getBytes(), sharedSecret.toByteArray());
             Message messageObj = new Message ( encryptedMessage , mac );
             out.writeObject( messageObj );
             out.flush();
         }
-
-        //Encrypts the message
-        //byte[] encryptedMessage = Encryption.encryptMessage(message.getBytes(), secret.toByteArray());
-        //Generates the MAC
-        //byte[] mac = Integrity.generateMAC (message.getBytes(), MAC_KEY);
-        //Creates the message object
-        //Message messageObj = new Message ( encryptedMessage , mac );
-        //Sends the encrypted message with MAC
-        //out.writeObject( messageObj );
-        
-        //Close connection
-        closeConnection();
     }
 
     /**
@@ -212,6 +189,10 @@ public class Client {
      */
     private void sendPublicDHKey ( byte[] publicKey ) throws Exception {
         out.writeObject ( publicKey );
+    }
+
+    private void sendAlgorithm ( int algorithm ) throws Exception {
+        out.writeObject( algorithm );
     }
 
     /**

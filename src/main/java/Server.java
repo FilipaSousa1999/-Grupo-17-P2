@@ -21,8 +21,6 @@ public class Server implements Runnable {
     private final PublicKey publicRSAKey;
     private final boolean isConnected;
 
-    private int algorithm_ser;
-
     /**
      * Constructs a Server object by specifying the port number. The server will be then created on the specified port.
      * The server will be accepting connections from all local addresses.
@@ -52,8 +50,9 @@ public class Server implements Runnable {
                 PublicKey clientPublicRSAKey = rsaKeyDistribution ( in );
                 // Agree on a shared secret
                 BigInteger sharedSecret = agreeOnSharedSecret ( clientPublicRSAKey );
+                int algorithm = getAlgorithm( in );
                 // Process the request
-                process ( client , sharedSecret , in, out );
+                process ( client , sharedSecret , in, out , algorithm);
             }
             closeConnection ( );
         } catch ( Exception e ) {
@@ -66,8 +65,8 @@ public class Server implements Runnable {
      *
      * @throws IOException if an I/O error occurs when reading stream header
      */
-    private void process ( Socket client , BigInteger sharedSecret , ObjectInputStream in, ObjectOutputStream out) throws IOException {
-        ClientHandler clientHandler = new ClientHandler ( client , sharedSecret , in , out);
+    private void process ( Socket client , BigInteger sharedSecret , ObjectInputStream in, ObjectOutputStream out , int algorithm) throws IOException {
+        ClientHandler clientHandler = new ClientHandler ( client , sharedSecret , in , out , algorithm);
         clientHandler.start ( );
     }
 
@@ -87,6 +86,11 @@ public class Server implements Runnable {
         // Send the public key
         sendPublicRSAKey ( );
         return clientPublicRSAKey;
+    }
+
+    private int getAlgorithm ( ObjectInputStream in ) throws Exception {
+        int algorithm = ( int ) in.readObject();
+        return algorithm;
     }
 
     /**
